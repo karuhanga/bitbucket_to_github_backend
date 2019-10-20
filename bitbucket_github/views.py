@@ -41,3 +41,16 @@ def authorize_github(request):
     return Response({
         'message': "Successfully authorized github",
     })
+
+
+@api_view(('POST',))
+@login_required
+def logout(request):
+    user = request.user
+    user.bitbucket_token = None
+    user.github_token = None
+    user.save()
+
+    return Response({
+        'message': "Successfully logged out.",
+    })

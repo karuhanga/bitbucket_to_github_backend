@@ -11,10 +11,7 @@ class User(AbstractUser):
         if self.github_token is None:
             return False
         r = requests.get(url='https://api.github.com/user',
-                         headers={
-                             'Authorization': 'token ' + self.github_token,
-                             # 'Accept': 'application/vnd.github.v3+json',
-                         }
+                         headers={'Authorization': f'token {self.github_token}'}
                          )
         if r.status_code == 200:
             return True
