@@ -1,12 +1,13 @@
 import jwt
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
+from django.db.models import Q
 from rest_framework import permissions
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
-from bitbucket_github.models import User
-from bitbucket_github.serializers import LoginSerializer, AuthorizeGithubSerializer
+from bitbucket_github.models import User, Progress
+from bitbucket_github.serializers import LoginSerializer, AuthorizeGithubSerializer, ProgressSerializer
 
 
 @api_view(('POST',))
@@ -53,4 +54,32 @@ def logout(request):
 
     return Response({
         'message': "Successfully logged out.",
+    })
+
+
+@api_view(('POST',))
+@login_required
+def copy(request, repo_slug):
+    user = request.user
+    progress, created = Progress.objects.get_or_create(user=user, repo_slug=repo_slug)
+
+    if not(progress.queued or progress.running):
+        # todo invoke celery task
+        progress.queued = True
+        progress.save()
+
+    return Response({
+        'message': f"Queued {repo_slug} for copying",
+    })
+
+
+@api_view(('GET',))
+@login_required
+def in_progress(request):
+    user = request.user
+    progress_items = Progress.objects.filter(user=user).filter(Q(queued=True) | Q(running=True))
+    serializer = ProgressSerializer(progress_items, many=True)
+
+    return Response({
+        'items': serializer.data,
     })

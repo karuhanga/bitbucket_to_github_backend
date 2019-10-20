@@ -16,3 +16,14 @@ class User(AbstractUser):
         if r.status_code == 200:
             return True
         return False
+
+
+class Progress(models.Model):
+    class Meta:
+        unique_together = ('user', 'repo_slug')
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    repo_slug = models.CharField(max_length=200)
+    message = models.TextField(blank=True)
+    running = models.BooleanField(default=False)
+    queued = models.BooleanField(default=False)

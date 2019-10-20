@@ -2,7 +2,7 @@ import requests
 from django.conf import settings
 from rest_framework import serializers
 
-from bitbucket_github.models import User
+from bitbucket_github.models import User, Progress
 
 
 class LoginSerializer(serializers.Serializer):
@@ -51,3 +51,9 @@ class AuthorizeGithubSerializer(serializers.Serializer):
         instance.github_token = validated_data['code']
         instance.save()
         return instance
+
+
+class ProgressSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Progress
+        fields = '__all__'
