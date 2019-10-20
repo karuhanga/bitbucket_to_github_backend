@@ -61,7 +61,7 @@ def copy_to_github(user_name, repo_slug):
         }, headers={'Authorization': f'token {user.github_token}'})
         print(create_repo_response.json())
         if create_repo_response.status_code is not 201:
-            raise Exception(f'A repo with this name probably exists.({create_repo_response.text})')
+            raise Exception(f'A repo with this name probably exists.')
 
         github_repo_git_link = create_repo_response.json()['clone_url'].replace('https://', f'https://{user.github_token}@', 1)
 
