@@ -145,6 +145,6 @@ CORS_ORIGIN_ALLOW_ALL = True
 
 
 # celery settings
-CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL')
+CELERY_BROKER_URL = os.environ.get('REDIS_URL')
 CELERY_RESULT_BACKEND = 'django-db'
 CELERY_CACHE_BACKEND = 'django-cache'
