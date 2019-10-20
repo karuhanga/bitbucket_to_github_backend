@@ -35,3 +35,5 @@ class JWTAuthentication:
 
     def authenticate_header(self, request):
         return 'Bearer'
+
+

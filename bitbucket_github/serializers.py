@@ -34,6 +34,7 @@ class AuthorizeGithubSerializer(serializers.Serializer):
         pass
 
     def validate_code(self, value):
+        # todo, we probably shouldn't be replacing the code like this
         response = requests.post('https://github.com/login/oauth/access_token',
                                  data={'client_id': settings.GITHUB['CLIENT_ID'],
                                   'client_secret': settings.GITHUB['CLIENT_SECRET'],
@@ -41,7 +42,9 @@ class AuthorizeGithubSerializer(serializers.Serializer):
                                  headers={'Accept': 'application/json'})
 
         if response.status_code == 200:
-            return response.json()['access_token']
+            access_token = response.json().get('access_token', None)
+            if access_token:
+                return access_token
         raise serializers.ValidationError("Github code is invalid")
 
     def update(self, instance, validated_data):

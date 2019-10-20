@@ -14,16 +14,21 @@ from bitbucket_github.serializers import LoginSerializer, AuthorizeGithubSeriali
 def login(request):
     serializer = LoginSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
+
     try:
-        user = User.objects.get(username=serializer.initial_data['username'])
-        serializer = LoginSerializer(user, data=request.data)
+        existing_user = User.objects.get(username=serializer.validated_data['username'])
+        serializer = LoginSerializer(existing_user, data=request.data)
+        serializer.is_valid(raise_exception=True)
     except User.DoesNotExist:
+        pass
+    finally:
         user = serializer.save()
+
     token = jwt.encode({'username': user.username}, settings.SECRET_KEY, algorithm='HS256')
     return Response({
         'token': token,
         'username': user.username,
-        'githubAuthenticated': user.github_token is not None
+        'githubAuthenticated': user.github_authenticated()
     })
 
 
