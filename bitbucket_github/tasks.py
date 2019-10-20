@@ -2,6 +2,7 @@ import subprocess
 
 import requests
 
+from bitbucket_github.celery import app
 from bitbucket_github.models import User, Progress
 
 GITHUB_ENDPOINT = 'https://api.github.com'
@@ -12,13 +13,17 @@ def cmd(string):
     return subprocess.run(string.split())
 
 
-def copy_to_github(user, repo_slug):
+@app.task(name="Copy to Github")
+def copy_to_github(user_name, repo_slug):
+    user = User.objects.get(username=user_name)
+
     progress, created = Progress.objects.get_or_create(user=user, repo_slug=repo_slug)
-    progress.queueing = False
+    progress.queued = False
     progress.running = True
     progress.save()
 
     def log(info):
+        print(info)
         progress.message = info
         progress.save()
 
@@ -28,13 +33,13 @@ def copy_to_github(user, repo_slug):
         # get profiles
         log('\tFetching profiles...')
         bitbucket_profile = requests.get(f'{BITBUCKET_ENDPOINT}/user?access_token=${user.bitbucket_token}').json()
-        github_profile = requests.get(url=f'{GITHUB_ENDPOINT}/user',
-                                      headers={'Authorization': f'token {user.github_token}'})
+        print(bitbucket_profile)
 
         # get repo
         log('\tFetching repo information...')
         repo = requests.get(
             f'{BITBUCKET_ENDPOINT}/repositories/{bitbucket_profile["username"]}/{repo_slug}?access_token=${user.bitbucket_token}').json()
+        print(repo)
 
         user_working_dir = bitbucket_profile["username"]
         repo_working_dir = f'{bitbucket_profile["username"]}/{repo_slug}'
@@ -53,9 +58,12 @@ def copy_to_github(user, repo_slug):
             'name': repo['name'],
             'private': repo['is_private'],
             'description': repo['description'],
-        }, headers={'Authorization': f'token {user.github_token}'}).json()
+        }, headers={'Authorization': f'token {user.github_token}'})
+        print(create_repo_response.json())
+        if create_repo_response.status_code is not 200:
+            raise Exception('A repo with this name probably exists.')
 
-        github_repo_git_link = create_repo_response['clone_url'].replace('https://', f'https://{user.github_token}@', 1)
+        github_repo_git_link = create_repo_response.json()['clone_url'].replace('https://', f'https://{user.github_token}@', 1)
 
         # push to new repo
         log('\tPushing code to Github repo...')
@@ -66,12 +74,14 @@ def copy_to_github(user, repo_slug):
         cmd(f'rm -rf {repo_working_dir}')
 
         log('Done.')
-    except Exception:
-        log("Failed to copy repo. Please retry.")
+    except Exception as e:
+        # cleanup
+        log('\tCleaning up...')
+        cmd(f'rm -rf {repo_working_dir}')
+
+        log(f"Failed to copy repo: {e}")
+        print(e)
     finally:
         progress.running = False
         progress.save()
 
-
-def run(repo_slug='andela-interview-code'):
-    copy_to_github(User.objects.all()[0], repo_slug)

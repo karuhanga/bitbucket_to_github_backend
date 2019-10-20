@@ -1,17 +1,12 @@
 #!/usr/bin/env python
 """Django's command-line utility for administrative tasks."""
-import os
 import sys
+
+from project.settings.utils import load_settings
 
 
 def main():
-    environment = os.environ.get('ENVIRONMENT', 'production')
-    if environment == 'development':
-        os.environ.setdefault("DJANGO_SETTINGS_MODULE",
-                              "project.settings.development")
-    else:
-        os.environ.setdefault("DJANGO_SETTINGS_MODULE",
-                              "project.settings.production")
+    load_settings()
 
     try:
         from django.core.management import execute_from_command_line

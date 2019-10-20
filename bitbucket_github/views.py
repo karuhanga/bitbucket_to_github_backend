@@ -8,6 +8,7 @@ from rest_framework.response import Response
 
 from bitbucket_github.models import User, Progress
 from bitbucket_github.serializers import LoginSerializer, AuthorizeGithubSerializer, ProgressSerializer
+from bitbucket_github.tasks import copy_to_github
 
 
 @api_view(('POST',))
@@ -64,9 +65,10 @@ def copy(request, repo_slug):
     progress, created = Progress.objects.get_or_create(user=user, repo_slug=repo_slug)
 
     if not(progress.queued or progress.running):
-        # todo invoke celery task
         progress.queued = True
         progress.save()
+
+        copy_to_github.delay(user.username, repo_slug)
 
     return Response({
         'message': f"Queued {repo_slug} for copying",
@@ -77,7 +79,7 @@ def copy(request, repo_slug):
 @login_required
 def in_progress(request):
     user = request.user
-    progress_items = Progress.objects.filter(user=user).filter(Q(queued=True) | Q(running=True))
+    progress_items = Progress.objects.filter(user=user)
     serializer = ProgressSerializer(progress_items, many=True)
 
     return Response({

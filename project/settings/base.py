@@ -35,10 +35,12 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.admin',
 
     'corsheaders',
     'rest_framework',
     'django_extensions',
+    'django_celery_results',
 
     'bitbucket_github.apps.BitbucketGithubConfig',
 ]
@@ -140,3 +142,9 @@ GITHUB = {
 }
 
 CORS_ORIGIN_ALLOW_ALL = True
+
+
+# celery settings
+CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL')
+CELERY_RESULT_BACKEND = 'django-db'
+CELERY_CACHE_BACKEND = 'django-cache'
