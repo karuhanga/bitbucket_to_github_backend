@@ -84,4 +84,3 @@ def copy_to_github(user_name, repo_slug):
     finally:
         progress.running = False
         progress.save()
-
